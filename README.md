@@ -1,193 +1,375 @@
 # React hook in detail
 
-## What are react hooks ??
+## The "Rules of Hooks"
 
-* So what are hooks? Well hooks are a new way or offer us a new way of writing our components.
+* You must only use useState and all the other hooks you'll learn about in this module at the top level of your component function and that already contains a lot of important things. Important is that it has to be a component function, so such a function which takes props and returns JSX, a function which React can use to render a component. It has to be such a function, you can't use another function and call a hook in there.
 
-* Thus far, of course we have functional and class-based components, right? 
+* You must only call useState directly in your top level of the function body.You must not call in a function of the function
 
-    * Functional components receive props and you return some JSX code that should be rendered to the screen.They are great for presentation, so for rendering the UI part, not so much about the business logic and they are typically focused on one or a few purposes per component.
+* You must also not call it in an if statement, The same goes for for loops also.
 
-    * Class-based components on the other hand also will receive props but they also have this internal state, class-based components are the components which actually hold the majority of our business logic, so with business logic, I mean things like we make an HTTP request and we need to handle the response and to change the internal state of the app or maybe even without HTTP. A user fills out the form and we want to show this somewhere on the screen, we need state for this, we need class-based components for this and therefore we also typically use class based components to orchestrate our other components and pass our state down as props to functional components
+* only call useState at the root level of this function 
 
-* One problem that converting from one component form to the other is annoying.It's not really difficult but it is annoying.
+##  Sending Data via Http
 
-*  lifecycle hooks can be hard to use right I should say. Obviously it's not hard to add componentDidMount and execute some code in there but knowing which lifecycle hook to use, when and how to use it correctly, that can be challenging especially in more complex applications
-
-* wouldn't it be nice if we had one way of creating components and that super component could then handle both state and side effects like HTTP requests and also render the user interface ? Well this is exactly what hooks are all about.
-
-* Hooks are extra features, extra functions we can call in our functional component which give us access to certain capabilities we could only use in class-based components before.
-
-## Enabling Hook.
-* Now to use React hooks, you need to use the right version.any version higher than 16.8 or at least 16.8 will do because the hooks feature was included in that version.
-* Make sure you have the below dependencies and then run "npm install"
 ```jsx
-"dependencies": {
-    "react": "^16.8.0",
-    "react-dom": "^16.8.0",
-    "react-scripts": "2.1.1"
-  }
+axios.post('https://test-21ad7.firebaseio.com/todos.json',{name : currentTodoStateName} )
+    .then(res =>{
+        console.log(res);
+    })
+    .catch(error =>{
+        console.log(error);
+    })
 ```
-##  The useState() Hook
+## The useEffect() Hook - alternative to ComponentDidMount(classbased component)
+* We storing to do on server typically we also want to fetch them and let's say we want to fetch them when this component gets loaded.
 
-* Lets create a simple todo component with a input box and add button to add the entered input to the list.
+* Well for that, we can use another hook and that is the so-called useEffect hook.
+
+* Now useEffect, just as useState has to be imported from React
 ```jsx
-import React from 'react';
-
-const todo = props => {
-    return <React.Fragment>
-        <input type="text" placeholder="Todo"/>
-        <button type="button">Add</button>
-        <ul>
-
-        </ul>
-    </React.Fragment>;
-};
-
-export default todo;
+import React, { useState, useEffect } from 'react';
 ```
-* Now how can we make sure that we capture the user input? Historically, to capture the user input, we needed a class-based component right.
-
-*  In a class-based component, what we did is we added the onChange listener to execute some handler method which would call set state, and then form that input element state property we could access the values. Now this is simply a syntax which is not available to us anymore because we're not in a class-based
-component,there is no state property in this function.
-
-* Now let's explore how we can do this with hooks.Instead we can use a new feature added by that alpha version of React, we import it from the React package and it's called useState
-
+* to this useEffect function here, you pass a function that should be executed.
 ```jsx
-import React, { useState } from 'react';
+useEffect(() => {
+
+});
 ```
-*  Now the use here at the beginning signals that this is a so-called hook function,it allows us to hook into a certain React functionality. 
+* Now here, I'll pass a function with no arguments and in this function, you put your code that for example should be executed when this component loads for the first time
 
-*  How do we use this function?  what does this function do?
+* So this function here will execute when this component runs for the first time
 
-*  This function takes an initial state. So let's say we want to manage the user input, we could say initially that should be empty, so we pass an empty string.We can pass anything here by the way, an empty string, 0, null, an empty array, an empty object, whichever kind.
+* so things like make HTTP requests or manipulate the DOM on your own or send analytics data to some server, don't do these things here in the render function, do them in a callback function passed to useEffect instead.
 
 ```jsx
-const inputState = useState('');
+useEffect(() => {
+        axios.get('https://test-21ad7.firebaseio.com/todos.json')
+        .then(result => {
+            console.log(result)
+        })
+    });
 ```
-* Now this alone doesn't do much because there is no magic connection between calling this function and this input here but useState will returns array.
-
-* this array will have exactly two elements.
-    * The first element is the current state,so in our case our full empty string as the first element.
-    * The second element in this inputState array is a function which we can use to manipulate that state and this function is also given to us by React.
-```jsx
-<input type="text" placeholder="Todo" onChange={inputState[1]} value={inputState[0]}/>
-```
-* instead I want to execute my own function which then in turn executes this function with the updated state.
+* So this is OK because this again, this useEffect hook here hooks into React's internals and makes sure that this code executes at the right time which is after this render cycle finished, so that this can run in a high performant way and that the UI is always updated correctly and you don't end up with some strange state changes behind the scenes outside of what React expected or anything like that.
 
 ```jsx
-const inputChangeHandler = (event) => {
-    inputState[1](event.target.value);
-}
-
-<input type="text" placeholder="Todo" onChange={inputChangeHandler} value={inputState[0]}/>
-```
-### UseSteate Quick wrap up.
-
-* useState function which is coming from React to which we pass our initial state and which then seems to return an array with two values.the first value is always our latest state and the second value in input state is a function which we can execute to update this state here with a new value. This is how useState hook works.
-
-## Adding Array Destructuring
-
-* since this input state in the end just holds an array, we can use a feature called array destructuring.
-
-* Array destructuring allows us to pull out the elements in that array right at the time we get it and store them in separate variables or constants.
-
-```jsx
-const [currentTodoStateName, setTodoName] = useState('');
-
-const inputChangeHandler = (event) => {
-    setTodoName(event.target.value);
-}
-
-<input type="text" placeholder="Todo" onChange={inputChangeHandler} value={currentTodoStateName}/>
-```
-
-##  Using Multiple State (!!! Recommended approach to handle Multiple State)
-
-* We can use useState as many as we need. Now lets add Today List array using useState hook
-
-```jsx
-import React, { useState } from 'react';
-
-const todo = props => {
-
     const [currentTodoStateName, setTodoName] = useState('');
 
     const [currentTodoListState, pushTodoList] = useState([]);
 
-    const inputChangeHandler = (event) => {
-        setTodoName(event.target.value);
-    }
-    const addTodoListHandler = () => {
-        pushTodoList(currentTodoListState.concat(currentTodoStateName));
-    }
+    useEffect(() => {
+        axios.get('https://test-21ad7.firebaseio.com/todos.json')
+        .then(result => {
+            const todoData = result.data;
+            const todos = []
+            for (const key in todoData){
+                todos.push({id : key , name: todoData[key].name})
+            }
+            // Calling pushTodoList is absolutely fine,it would not be OK to call useState in here or to call useEffect in here because of the rules of hooks
+            pushTodoList(todos);
+        })
+    });
+```
+## Controlling Effect Execution
 
-    return (
-        <React.Fragment>
-            <input type="text" placeholder="Todo" onChange={inputChangeHandler} value={currentTodoStateName}/>
-            <button type="button" onClick={addTodoListHandler}>Add</button>
-            <ul>
-                {currentTodoListState.map(todo => 
-                <li key={todo}>{todo}</li>)}
-            </ul>
-        </React.Fragment>
+* So I added the useEffect hook to cause side effects, it worked but well we caused quite a big side effect because we entered an infinite loop.
+
+* The reason for that is that useEffect does not only run once, like for example componentDidMount did but it runs ofter every render cycle.
+
+* Now how can we avoid doing that? Well useEffect takes actually two arguments.
+
+* It does not just take this first argument which is the function it executes,it takes a second argument instead which is an array of values.
+
+* we want to have a look at before it executes this function(ie first param) and only if the values we have a look at changed, only in this case this effect should run again.
+
+```jsx
+useEffect(() => {
+        axios.get('https://test-21ad7.firebaseio.com/todos.json')
+        .then(result => {
+            console.log(result)
+            const todoData = result.data;
+            const todos = []
+            for (const key in todoData){
+                todos.push({id : key , name: todoData[key].name})
+            }
+            pushTodoList(todos);
+        })
+    },[currentTodoStateName]);
+```
+* if currentTodoStateName value change run execute this useEffect function.
+
+* the second argument you pass to useEffect is an array where you list all the values, all the variables you want to look for and only if a value passed here in this second argument array, only if one of the values you pass in here changed, this function here, this first argument to useEffect will run again.
+
+* So if you have multiple elements here, multiple things you're watching for, then any change in any item will be enough to run this again.
+
+* Now if you only want to run an effect, on mounting ie on loading , well then you pass an empty array here because what you're saying here is this should only run when the items in here, when one of the items in here changed and if you pass no items, well then React hasn't anything to watch and therefore it will not detect any changes and therefore this first argument function will never run again. So if you want to replicate componentDidMount, then pass an empty array
+
+```jsx
+useEffect(() => {
+        axios.get('https://test-21ad7.firebaseio.com/todos.json')
+        .then(result => {
+            console.log(result)
+            const todoData = result.data;
+            const todos = []
+            for (const key in todoData){
+                todos.push({id : key , name: todoData[key].name})
+            }
+            pushTodoList(todos);
+        })
+    },[]);
+```
+* if you want to replicate componentDidMount in combination with componentDidUpdate with an if check included in it, then you should add watch param (currentTodoStateName) as second argument.
+
+## Effect Cleanup
+
+* Now what about componentDidUnmount, what if you want to run something whenever a component gets removed or in general, what if you have side effects that require cleanup work ??
+
+* You can return something in this function you pass as a first argument.
+```jsx
+const mouseMoveHandler = event => {
+        console.log(event.clientX, event.clientY);
+    };
+
+    useEffect(() => {
+        document.addEventListener('mousemove', mouseMoveHandler);
+        return () => {
+            document.removeEventListener('mousemove', mouseMoveHandler);
+        };
+    }, []);
+```
+* Here before adding addEventListener we want to clean(remove) the old EventListener by using return function, removeEventListener will get called before addEventListener.
+
+* And the second paramter [] (arrya) indicates this first paramter addEventListener will be called on component mounting (ie added) and return function (clean up) will be called only on component unmounting(ie removed)
+
+## Converting the "App" Component
+
+* Header.js
+```jsx
+import React from 'react';
+
+const header = props => (
+    <header>
+        <button onClick={props.onLoadTodos}>Todo List</button> | <button onClick={props.onLoadAuth}>Auth</button>
+    </header>
+);
+
+export default header;
+```
+* Auth.js
+```jsx
+import React from 'react'
+
+const auth = props => (
+    <h1>Auth Component</h1>
+);
+
+export default auth;
+```
+* First of all convert app.js to a hook-based functional component as well and thereafter, let's make sure that we can manage that auth status and use that in the different parts of our app
+
+```jsx
+const app = props =>(
+      <div className="App">
+        <Header/>
+        <hr/>
+        <Todo/>
+        <Auth/>
+      </div>
     );
-};
 
-export default todo;
+export default app;
 ```
 
-##  Using One State Instead (!!! Not recommended approach to handle Multiple State)
-
-* We now use two instances of the useState function, we call it two times and that is perfectly fine and actually the way I would recommend working with that,you separate your states across multiple hooks where each hook manages one individual state.
-
-* We can of course also merge states into an object as one state.
+* The more interesting part will be that we should able to switch between these two pages now, that this is a functional component and for this, we'll need to manage state.
 
 ```jsx
 import React, { useState } from 'react';
+import Todo from './components/Todo';
+import Header from './components/Header';
+import Auth from './components/Auth';
 
-const todo = props => {
+const app = props => {
 
-    // const [currentTodoStateName, setTodoName] = useState('');
+  const [page, setPage] = useState('auth')
 
-    // const [currentTodoListState, pushTodoList] = useState([]);
+  const switchPage = (PageName) => {
+    setPage(PageName);
+  };
 
-    const [todoStateData, setTodoStateFunc] = useState(
-        {
-        currentTodoStateName: '',
-        currentTodoListState: []
-        }
-    );
+  return(
+    <div className="App">
+      <Header 
+      onLoadTodos={switchPage.bind(this, 'todos')} 
+      onLoadAuth={switchPage.bind(this, 'auth')}
+      />
+      <hr/>
+      {page === 'auth' ? <Auth/> : <Todo/>}
+    </div>
+  )
 
-    const inputChangeHandler = (event) => {
-        setTodoStateFunc({
-            currentTodoStateName : event.target.value,
-            currentTodoListState : todoStateData.currentTodoListState
-        });
-    }
-    const addTodoListHandler = () => {
-        // pushTodoList(currentTodoListState.concat(currentTodoStateName));
+};
+  
+export default app;
+```
+## The useContext() Hook
 
-        setTodoStateFunc({
-            currentTodoStateName : todoStateData.currentTodoStateName,
-            currentTodoListState : todoStateData.currentTodoListState.concat(todoStateData.currentTodoStateName)
-        });
-    }
+* Lets add some fake auth mechanism in auth component
+```jsx
 
-    return (
-        <React.Fragment>
-            <input type="text" placeholder="Todo" onChange={inputChangeHandler} value={todoStateData.currentTodoStateName}/>
-            <button type="button" onClick={addTodoListHandler}>Add</button>
-            <ul>
-                {todoStateData.currentTodoListState.map(todo => 
-                <li key={todo}>{todo}</li>)}
-            </ul>
-        </React.Fragment>
-    );
+```
+* Now what I want to do here is, whenever I press this button, I obviously set the state to being logged in and I want to set the state through the context API.
+*************************************************************************************************************************************************************
+* From Section 7 Deepdive into React Js : Now React create context actually allows us to initialize our context with a default value because what
+the context in the end is is a globally available Javascript object
+
+* which can be passed between React components without using props, behind the scenes so to say. So you can initialize as with any value you want.
+
+* if I initialize my default value with everything I want to be able to access on this context from different components in my application
+
+*  Now authContext can be used as a component and it should wrap and that's important, it should wrap all the parts of your application that need access to this context.
+
+* Refer Dive deep fully including Legacy ...
+
+
+*************************************************************************************************************************************************************
+
+* This API which allows you to pass state or values around your component tree without having to pass props all the time
+
+```jsx
+import React from 'react';
+
+const authContext = React.createContext(false);
+
+export default authContext;
+
+```
+* Now let us use this context in app.js
+```jsx
+import AuthContext from './auth-context'
+
+const [page, setPage] = useState('auth');
+
+const switchPage = (PageName) => {
+    setPage(PageName);
 };
 
-export default todo;
+return(
+    <div className="App">
+        <AuthContext.Provider>
+            <Header 
+            onLoadTodos={switchPage.bind(this, 'todos')} 
+            onLoadAuth={switchPage.bind(this, 'auth')}
+            />
+            <hr/>
+            {page === 'auth' ? <Auth/> : <Todo/>}
+        </AuthContext.Provider>
+     </div>
+)
+
 ```
-* Because one important takeaway is that unlike set state which took an object and merged it with the existing state, the hook created update function here will not merge whatever you pass in with the old state, it will simply replace the old state with the new one and that is super important to understand
+* here have to set up a so-called provider. For that we simply wrap everything, which should be able to receive the context.
+* Now anyware inside the header component we can consume the false value which is set above
+* Now we have to update the auth status to true when the user clicks login
+```jsx
+const [authStatus, setPageStatus] = useState(false);
+
+const login = () => {
+    setPageStatus(true);
+  };
+
+```
+* Now we have to pass this authstatus and login function to  AuthContext.Provider
+```jsx
+<AuthContext.Provider value={{status : authStatus, loginFunc : login}}>
+    <Header 
+    onLoadTodos={switchPage.bind(this, 'todos')} 
+    onLoadAuth={switchPage.bind(this, 'auth')}
+    />
+    <hr/>
+    {page === 'auth' ? <Auth/> : <Todo/>}
+</AuthContext.Provider>
+```
+* So now my context is actually a Javascript object which holds the current status, a boolean (true/false) and which holds the reference to a function which allows us to change that boolean. 
+
+### Lets now use the context we holds now
+
+* now want to access my context and we can do this with the help of a hook. The hook is called useContext and it does what the name implies.
+```jsx
+import React from 'react';
+
+const authContext = React.createContext({status : false, loginFunc  : () => {}});
+
+export default authContext;
+
+```
+* Now the thing is, there can be more than one context in React and therefore we need some identifier for the context we want to tap into here and the identifier is simply that context object we create here
+
+* Now the values we enter here as starting values don't really matter because we overwrite them here in app.js anyways where I set this real value
+
+* Now lets use the set authContext value in Auth.js 
+
+```jsx
+import React, {useContext} from 'react'
+
+import AuthContext from '../auth-context';
+
+const auth = props => {
+    const authVal = useContext(AuthContext);
+
+    return <button onClick={authVal.loginFunc}>Log in!!</button> ;
+};
 
 
+export default auth;
+```
+* I only want to unlock the to-do list button if we are authenticated and for this in the header, I also need to get access to authContext.
+```jsx
+import React, {useContext} from 'react';
+
+import AuthContext from '../auth-context';
+
+const header = props => {
+    const authObj = useContext(AuthContext)
+    return <header>
+        { authObj.status ? <button onClick={props.onLoadTodos}>Todo List</button> : null} 
+        <button onClick={props.onLoadAuth}>Auth</button>
+    </header>
+};
+
+export default header;
+
+```
+* Now we can use the logedin Status in our header component.
+
+## State and Effects Gotchas
+* The problem we're facing is that at the point of time we click the button, we enter this function and this essentially is a closure which means that our variable values which we get from outside, like the todoName but also the todoList is logged in at the point of time this function, this button click
+function here starts to execute and therefore both our first and the second todo we add build up on the same starting todoList.
+
+* When you try to add continously todo with in a second we will able to see only the todo value added second not the first todo.. why ??? only on refresh we will able to see both the todo... how to fix this.
+
+* One simple fix is add new use context about stubmit status which will start with null (Todo.js)
+```jsx
+const [submittedStatus, updateSubmitedStatus] = useState(null);
+
+useEffect(() => {
+        if(submittedStatus!=null){
+            pushTodoList(currentTodoListState.concat(submittedStatus));
+        }
+    }, [submittedStatus]);
+
+const addTodoListHandler = () => {
+        
+        axios.post('https://test-21ad7.firebaseio.com/todos.json',{name : currentTodoStateName} )
+            .then(res =>{
+                setTimeout(()=>{
+                    const updatedTodoVal = {id : res.data.name , name: currentTodoStateName}
+                    updateSubmitedStatus(updatedTodoVal);
+
+                }, 300);
+            })
+            .catch(error =>{
+                console.log(error);
+            })
+    }
+```
+* Here with the help of useEffect we will fix this issue... once we git the response lets call the useEffect and update pushTodoList only/immediately if the submittedStatus value changes
