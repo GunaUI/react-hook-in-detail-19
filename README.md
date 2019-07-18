@@ -372,4 +372,288 @@ const addTodoListHandler = () => {
             })
     }
 ```
-* Here with the help of useEffect we will fix this issue... once we git the response lets call the useEffect and update pushTodoList only/immediately if the submittedStatus value changes
+* Here with the help of useEffect we will fix this issue... once we git the response lets call the useEffect and update pushTodoList only/immediately if the submittedStatus value changes.
+
+## The useReducer() Hook
+
+* let me introduce useReducer. Now if you went through the Redux sections in this course, you already know what a reducer is,
+
+* useReducer allows us to bundle the logic for updating the state in one simple function. Now how can we use useReducer here?
+
+```jsx
+const todoListReducer = (state, action) => {
+    switch(action.type) {
+        case 'ADD':
+            return state.concat(action.payload);
+        case 'SET':
+            return action.payload;
+        case 'REMOVE':
+            return state.filter((todo) => todo.id != action.payload.id);
+        default:
+            return state;
+    }
+  };
+```
+
+* The action basically will be an object with information about what to do and the state will be our latest state which we want to edit based on the action.
+
+* useReducer is totally independent from Redux or React Redux, it's built into core React and it's a simple function that helps us manipulate state conveniently.
+
+* now it's up to us to register this reducer and use it correctly.
+
+* Now for that, we first of all use useReducer and there we first of all pass a reducer function, here I will pass todoListReducer, so I will pass this function as the first argument.
+
+* The second argument can be our starting state.Now remember, I want to have a todoList here as state,so I will start with an empty array,
+
+* Now the third argument could be an initial action we want to execute, so we could already pass in an action here with type add then some default item which we want to add but of course I don't want to do that here, I just want to initialize that like this.
+
+```jsx
+// const [todoList, setTodoList] = useState([]);
+
+// useReducer is alternative to useState
+const [todoListState , dispatchFunc] = useReducer(todoListReducer, []);
+```
+* useReducer is basically alternative to useState , So I can comment out this useState which is below
+* Replace setTodoList with  dispatchFunc since we commented useState logic.
+* On load component
+```jsx
+useEffect(() => {
+    axios.get('https://test-3e15a.firebaseio.com/todos.json').then(result => {
+      console.log(result);
+      const todoData = result.data;
+      const todos = [];
+      for (const key in todoData) {
+        todos.push({ id: key, name: todoData[key].name });
+      }
+      //setTodoList(todos);
+      dispatchFunc({type:'SET',payload : todos});
+    });
+    return () => {
+      console.log('Cleanup');
+    };
+  }, []);
+```
+* And also while add New item
+```jsx
+const todoAddHandler = () => {
+    // setTodoState({
+    //   userInput: todoState.userInput,
+    //   todoList: todoState.todoList.concat(todoState.userInput)
+    // });
+
+    axios
+      .post('https://test-3e15a.firebaseio.com/todos.json', { name: todoName })
+      .then(res => {
+        setTimeout(() => {
+          const todoItem = { id: res.data.name, name: todoName };
+          dispatchFunc({ type: 'ADD', payload: todoItem });
+        }, 3000);
+      })
+      .catch(err => {
+        console.log(err);
+      });
+  };
+
+```
+* On Remove item
+```jsx
+<ul>
+{todoList.map(todo => (
+    <li key={todo.id} onClick={todoRemoveHandler.bind(this, todo.id)}>
+    {todo.name}
+    </li>
+))}
+</ul>
+```
+* Remove handler
+```jsx
+const todoRemoveHandler = todoId => {
+    axios
+        .delete(`https://test-3e15a.firebaseio.com/todos/${todoId}.json`)
+        .then(res => {
+        dispatch({ type: 'REMOVE', payload: todoId });
+        })
+        .catch(err => console.log(err));
+};
+```
+
+## useReducer() vs useState()
+
+* By using dispatch, we pass this on to a function which will always receive the latest state when it runs and then manipulate that state and return a new state and that we get the latest state is handled and guaranteed by React which hooks into its internal state management system and gives us that state.
+
+* So therefore here, we can save the time of adding an extra effect and using useState with an extra state,instead here we can really just use that one reducer function
+
+* React always gives us the latest state in there, we can always rely on working with the latest state here, so no matter how many items we add in one and the same timeout period, they will end up in the state correctly because for every run of this reducer function, this state will be the latest state snapshot
+and not the state snapshot at the point of time we started some logic down there.
+
+## Working with References and useRef()
+
+*  You might remember that when using class-based components, we could use references to interact with inputs for example or interact with any element on our page.
+
+* before hooks in functional components, this was not possible because functional components have no properties which we used to store the references
+
+* Now with hooks though, we can start using refs, references in our functional components.
+
+* So let's say for this input, we don't want to get the value and set the value through todoName like this XXXXXXXXX !!!!!
+```jsx
+<input
+        type="text"
+        placeholder="Todo"
+        onChange={inputChangeHandler}
+        value={todoName}
+      />
+```
+* just add useRef
+```jsx
+const todoInputElRef = useRef()
+
+<input
+    type="text"
+    placeholder="Todo"
+    // onChange={inputChangeHandler}
+    // value={todoName}
+    ref={todoInputElRef} 
+/>
+```
+* Now a connection is established between this input element and this constant(todoInputElRef) through useRef
+
+* And now we can interact with that to get our entered name, our todoName.
+
+* we use the internal state management of the input element and use a ref to extract its current value whenever we need it 
+```jsx
+const todoName = todoInputElRef.current.value;
+```
+## Preparing & Optimizing
+
+* Class Setstate is handled by function's useState and lifecycle methods is handled by function's useEffect
+
+* but one hook which can be very important for performance optimization is shouldComponentUpdate.
+
+* In a class-based component, this allows us to define logic that decides whether this component and its child component tree will be re-rendered or not and using that correctly can give us a performance boost.
+
+* Now we can also make sure that with functional components, we only re-render certain components if their value changed as we used in useEffect and a good example is our todoList
+
+* Lets move our list alone to new functional component and then render ListComponent.
+
+```jsx
+import React, {} from 'react'
+
+const list = props => {
+    console.log('Rendering List ...');
+
+    return <ul>
+            {props.items.map(todo => (
+                <li key={todo.id} onClick={props.OnclickRemoveHandler.bind(this, todo.id)}>
+                {todo.name}
+                </li>
+            ))}
+            </ul>
+};
+
+export default list;
+```
+* use this List component in todo list
+
+```jsx
+<list item={todoList} OnclickRemoveHandler={todoRemoveHandler}/>
+```
+* Currently it will rerender the componenet whe we add new item and when we try to remove a item . Now what can we optimize about this?
+
+* Let add some validations to our input element ie show error if not valid value kind of thing
+
+```jsx
+import React, {useState} from 'react';
+
+const [inputIsVaid , setInputIsValid] = useState(false);
+
+const inputValidationHandler = event =>{
+    if(event.target.value.trim() === ''){
+        setInputIsValid(false);
+    }else{
+        setInputIsValid(true);
+    }
+}
+
+<input
+    type="text"
+    placeholder="Todo"
+    // onChange={inputChangeHandler}
+    // value={todoName}
+    ref={todoInputElRef} 
+    onChange={inputValidationHandler}
+    style={backgroundColor: inputIsVaid ? 'transparent': 'red' }
+/>
+```
+* You will notice now is that as I type, rendering the list gets called again and again for each key press..
+
+* Now re-rendering in React of course does not mean that the DOM is really rendered but the virtual DOM is re-rendered and React checks whether the real DOM needs to change. So we can improve the performance because this check is totally redundant,we know that there is no need in updating that list here 
+
+* just to highlight this, this is not just a case for typing in an input. Whenever you set some state here in this component, React will re-render it and if that state does not directly affect this list, you want to make sure that this list does not unnecessarily get re-rendered.
+
+* So how can we solve this?
+
+##  Avoiding Unnecessary Re-Rendering
+
+* Now to make sure that we don't unnecessarily re-render list, we can use another hook provided by React and that is the useMemo hook.
+
+```jsx
+import React, {useMemo} from 'react';
+
+{
+    useMemo(
+        () => <list item={todoList} OnclickRemoveHandler={todoRemoveHandler}/>, [todoList]
+    )
+}
+
+
+```
+* memoization basically is all about caching values if their inputs don't change 
+
+* When todoList and todoRemoveHandler, if these two inputs to this function ,  if these don't change, then we don't want to regenerate this.we just want to take the old stored cached,
+
+* Now to tell you useMemo or React which inputs are important for this list, we have to add a second argument to useMemo because it can't infer this.
+
+* and this argument is an array where we list all the arguments we want React to watch out for.here ..todoList
+
+## Creating a Custom Hook
+
+* you can create your own hooks. And creating your own hooks is super simple and allows you to extract functionality out of a component and share it across multiple components.
+
+* Lets create a validation hook.
+```jsx
+import { useState } from 'react';
+
+export const useFormInput = () => {
+  const [value, setValue] = useState('');
+  const [validity, setValidity] = useState(false);
+
+  const inputChangeHandler = event => {
+    setValue(event.target.value);
+    if (event.target.value.trim() === '') {
+      setValidity(false);
+    } else {
+      setValidity(true);
+    }
+  };
+
+  return { value: value, onChange: inputChangeHandler, validity };
+};
+
+```
+* your own hook functions, so functions which you intend to use as hooks should start with use, lowercase.
+
+* Now we can use our own hook...
+
+```jsx
+import { useFormInput } from '../hooks/forms'
+
+const todoInput = useFormInput();
+
+<input
+        type="text"
+        placeholder="Todo"
+        onChange={todoInput.onChange}
+        value={todoInput.value}
+        style={{ backgroundColor: todoInput.validity === true ? 'transparent' : 'red' }}
+      />
+```

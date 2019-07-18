@@ -1,5 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useReducer } from 'react';
 import axios from 'axios';
+
+import List from './List';
+
+import { useFormInput } from '../hooks/forms'
 
 const todo = props => {
 
@@ -8,6 +12,8 @@ const todo = props => {
     const [currentTodoListState, pushTodoList] = useState([]);
 
     const [submittedStatus, updateSubmitedStatus] = useState(null);
+
+    const todoInput = useFormInput();
 
     
     useEffect(() => {
@@ -29,6 +35,19 @@ const todo = props => {
     const mouseMoveHandler = event => {
         console.log(event.clientX, event.clientY);
     };
+
+    const todoListReducer = (state, action) => {
+        switch(action.type) {
+            case 'ADD':
+                return state.concat(action.payload);
+            case 'REMOVE':
+                return state.filter((todo) => todo.id != action.payload.id);
+            default:
+                return state;
+        }
+    };
+
+    useReducer(todoListReducer, [])
 
     useEffect(() => {
         document.addEventListener('mousemove', mouseMoveHandler);
@@ -63,14 +82,20 @@ const todo = props => {
             })
     }
 
+    const todoRemoveHandler = todoId => {
+        axios
+            .delete(`https://test-3e15a.firebaseio.com/todos/${todoId}.json`)
+            .then(res => {
+            dispatch({ type: 'REMOVE', payload: todoId });
+            })
+            .catch(err => console.log(err));
+    };
+
     return (
         <React.Fragment>
             <input type="text" placeholder="Todo" onChange={inputChangeHandler} value={currentTodoStateName}/>
             <button type="button" onClick={addTodoListHandler}>Add</button>
-            <ul>
-                {currentTodoListState.map(todo => 
-                <li key={todo.id}>{todo.name}</li>)}
-            </ul>
+            <List item={todoList} OnclickRemoveHandler={todoRemoveHandler}/>
         </React.Fragment>
     );
 };
