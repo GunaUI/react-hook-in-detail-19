@@ -657,3 +657,24 @@ const todoInput = useFormInput();
         style={{ backgroundColor: todoInput.validity === true ? 'transparent' : 'red' }}
       />
 ```
+* Refer Link to the finished burger using css (on codepen.io): https://codepen.io/anon/pen/PJrgga
+
+*  React Rocks! Where to find more Examples https://react.rocks/
+
+## Static React Apps with Gatsby.js
+
+* Gatsby.js - https://www.gatsbyjs.org/
+
+##  Introducing React Native
+
+* React native essentially is react but for mobile apps and with that, I mean native apps, native iOS s or Android apps.
+
+##  UI libraries
+
+* https://material-ui.com/
+
+* https://react-bootstrap.github.io/
+
+## Preact
+
+* Lightweight alternative to react https://preactjs.com/
